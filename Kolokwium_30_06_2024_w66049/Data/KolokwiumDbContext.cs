@@ -7,6 +7,8 @@ public class KolokwiumDbContext : DbContext
     public KolokwiumDbContext(DbContextOptions options) : base(options)
     {
     }
-    
+
     // public DbSet<Entity> Entitys { get; set; }
+    public DbSet<Mecz> Meczs { get; set; }
+    public DbSet<DruzynaPilkarska> DruzynaPilkarskas { get; set; }
 }

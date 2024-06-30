@@ -291,3 +291,4 @@
 /Users/mbaryla/RiderProjects/Kolokwium_30_06_2024_w66049/Kolokwium_30_06_2024_w66049/obj/Debug/net8.0/Kolokwium_30_06_2024_w66049.pdb
 /Users/mbaryla/RiderProjects/Kolokwium_30_06_2024_w66049/Kolokwium_30_06_2024_w66049/obj/Debug/net8.0/Kolokwium_30_06_2024_w66049.genruntimeconfig.cache
 /Users/mbaryla/RiderProjects/Kolokwium_30_06_2024_w66049/Kolokwium_30_06_2024_w66049/obj/Debug/net8.0/ref/Kolokwium_30_06_2024_w66049.dll
+/Users/mbaryla/RiderProjects/Kolokwium_30_06_2024_w66049/Kolokwium_30_06_2024_w66049/obj/Debug/net8.0/Kolokwium_30_06_2024_w66049.sourcelink.json
