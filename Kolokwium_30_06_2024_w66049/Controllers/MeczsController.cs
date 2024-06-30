@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using Kolokwium_30_06_2024_w66049.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Kolokwium_30_06_2024_w66049.Data;
+using Kolokwium_30_06_2024_w66049.Models.Mecz;
 
 namespace Kolokwium_30_06_2024_w66049.Controllers
 {
@@ -13,53 +16,63 @@ namespace Kolokwium_30_06_2024_w66049.Controllers
     [ApiController]
     public class MeczsController : ControllerBase
     {
-        private readonly KolokwiumDbContext _context;
+        private readonly IMapper _mapper;
+        private readonly IMeczsRepository _meczsRepository;
 
-        public MeczsController(KolokwiumDbContext context)
+        public MeczsController(IMapper mapper, IMeczsRepository meczsRepository)
         {
-            _context = context;
+            _mapper = mapper;
+            _meczsRepository = meczsRepository;
         }
 
         // GET: api/Meczs
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Mecz>>> GetMeczs()
+        public async Task<ActionResult<IEnumerable<MeczDto>>> GetMeczs()
         {
-            return await _context.Meczs.ToListAsync();
+            var mecze = await _meczsRepository.GetAllAsync();
+            var records = _mapper.Map<List<MeczDto>>(mecze);
+            return Ok(records);
         }
 
         // GET: api/Meczs/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Mecz>> GetMecz(int id)
         {
-            var mecz = await _context.Meczs.FindAsync(id);
+            var mecz = await _meczsRepository.GetAsync(id);
 
             if (mecz == null)
             {
                 return NotFound();
             }
 
-            return mecz;
+            return Ok(_mapper.Map<MeczDto>(mecz));
         }
 
         // PUT: api/Meczs/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutMecz(int id, Mecz mecz)
+        public async Task<IActionResult> PutMecz(int id, MeczDto meczDto)
         {
-            if (id != mecz.Id)
+            if (id != meczDto.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(mecz).State = EntityState.Modified;
+            var mecz = await _meczsRepository.GetAsync(id);
+            if (mecz == null)
+            {
+                return NotFound();
+            }
+
+            _mapper.Map(meczDto, mecz);
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _meczsRepository.UpdateAsync(mecz);
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!MeczExists(id))
+                if (!await MeczExists(id))
                 {
                     return NotFound();
                 }
@@ -75,10 +88,10 @@ namespace Kolokwium_30_06_2024_w66049.Controllers
         // POST: api/Meczs
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Mecz>> PostMecz(Mecz mecz)
+        public async Task<ActionResult<Mecz>> PostMecz(MeczDto meczDto)
         {
-            _context.Meczs.Add(mecz);
-            await _context.SaveChangesAsync();
+            var mecz = _mapper.Map<Mecz>(meczDto);
+            await _meczsRepository.AddAsync(mecz);
 
             return CreatedAtAction("GetMecz", new { id = mecz.Id }, mecz);
         }
@@ -87,21 +100,20 @@ namespace Kolokwium_30_06_2024_w66049.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteMecz(int id)
         {
-            var mecz = await _context.Meczs.FindAsync(id);
+            var mecz = await _meczsRepository.GetAsync(id);
             if (mecz == null)
             {
                 return NotFound();
             }
 
-            _context.Meczs.Remove(mecz);
-            await _context.SaveChangesAsync();
+            await _meczsRepository.DeleteAsync(id);
 
             return NoContent();
         }
 
-        private bool MeczExists(int id)
+        private async Task<bool> MeczExists(int id)
         {
-            return _context.Meczs.Any(e => e.Id == id);
+            return await _meczsRepository.Exists(id);
         }
     }
 }

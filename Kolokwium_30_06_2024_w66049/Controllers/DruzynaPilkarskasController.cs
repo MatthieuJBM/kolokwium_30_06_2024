@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using Kolokwium_30_06_2024_w66049.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Kolokwium_30_06_2024_w66049.Data;
+using Kolokwium_30_06_2024_w66049.Models.DruzynaPilkarska;
 
 namespace Kolokwium_30_06_2024_w66049.Controllers
 {
@@ -13,53 +16,63 @@ namespace Kolokwium_30_06_2024_w66049.Controllers
     [ApiController]
     public class DruzynaPilkarskasController : ControllerBase
     {
-        private readonly KolokwiumDbContext _context;
+        private readonly IMapper _mapper;
+        private readonly IDruzynaPilkarskasRepository _druzynaPilkarskasRepository;
 
-        public DruzynaPilkarskasController(KolokwiumDbContext context)
+        public DruzynaPilkarskasController(IMapper mapper, IDruzynaPilkarskasRepository druzynaPilkarskasRepository)
         {
-            _context = context;
+            _mapper = mapper;
+            _druzynaPilkarskasRepository = druzynaPilkarskasRepository;
         }
 
         // GET: api/DruzynaPilkarskas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<DruzynaPilkarska>>> GetDruzynaPilkarskas()
+        public async Task<ActionResult<IEnumerable<DruzynaPilkarskaDto>>> GetDruzynaPilkarskas()
         {
-            return await _context.DruzynaPilkarskas.ToListAsync();
+            var druzynyPilkarskie = await _druzynaPilkarskasRepository.GetAllAsync();
+            var records = _mapper.Map<List<DruzynaPilkarskaDto>>(druzynyPilkarskie);
+            return Ok(records);
         }
 
         // GET: api/DruzynaPilkarskas/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<DruzynaPilkarska>> GetDruzynaPilkarska(int id)
+        public async Task<ActionResult<DruzynaPilkarskaDto>> GetDruzynaPilkarska(int id)
         {
-            var druzynaPilkarska = await _context.DruzynaPilkarskas.FindAsync(id);
+            var druzynaPilkarska = await _druzynaPilkarskasRepository.GetAsync(id);
 
             if (druzynaPilkarska == null)
             {
                 return NotFound();
             }
 
-            return druzynaPilkarska;
+            return Ok(_mapper.Map<DruzynaPilkarskaDto>(druzynaPilkarska));
         }
 
         // PUT: api/DruzynaPilkarskas/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutDruzynaPilkarska(int id, DruzynaPilkarska druzynaPilkarska)
+        public async Task<IActionResult> PutDruzynaPilkarska(int id, DruzynaPilkarskaDto druzynaPilkarskaDto)
         {
-            if (id != druzynaPilkarska.Id)
+            if (id != druzynaPilkarskaDto.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(druzynaPilkarska).State = EntityState.Modified;
+            var druzynaPilkarska = await _druzynaPilkarskasRepository.GetAsync(id);
+            if (druzynaPilkarska == null)
+            {
+                return NotFound();
+            }
+
+            _mapper.Map(druzynaPilkarskaDto, druzynaPilkarska);
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _druzynaPilkarskasRepository.UpdateAsync(druzynaPilkarska);
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!DruzynaPilkarskaExists(id))
+                if (!await DruzynaPilkarskaExists(id))
                 {
                     return NotFound();
                 }
@@ -75,10 +88,10 @@ namespace Kolokwium_30_06_2024_w66049.Controllers
         // POST: api/DruzynaPilkarskas
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<DruzynaPilkarska>> PostDruzynaPilkarska(DruzynaPilkarska druzynaPilkarska)
+        public async Task<ActionResult<DruzynaPilkarska>> PostDruzynaPilkarska(DruzynaPilkarskaDto druzynaPilkarskaDto)
         {
-            _context.DruzynaPilkarskas.Add(druzynaPilkarska);
-            await _context.SaveChangesAsync();
+            var druzynaPilkarska = _mapper.Map<DruzynaPilkarska>(druzynaPilkarskaDto);
+            await _druzynaPilkarskasRepository.AddAsync(druzynaPilkarska);
 
             return CreatedAtAction("GetDruzynaPilkarska", new { id = druzynaPilkarska.Id }, druzynaPilkarska);
         }
@@ -87,21 +100,20 @@ namespace Kolokwium_30_06_2024_w66049.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDruzynaPilkarska(int id)
         {
-            var druzynaPilkarska = await _context.DruzynaPilkarskas.FindAsync(id);
+            var druzynaPilkarska = await _druzynaPilkarskasRepository.GetAsync(id);
             if (druzynaPilkarska == null)
             {
                 return NotFound();
             }
 
-            _context.DruzynaPilkarskas.Remove(druzynaPilkarska);
-            await _context.SaveChangesAsync();
+            await _druzynaPilkarskasRepository.DeleteAsync(id);
 
             return NoContent();
         }
 
-        private bool DruzynaPilkarskaExists(int id)
+        private async Task<bool> DruzynaPilkarskaExists(int id)
         {
-            return _context.DruzynaPilkarskas.Any(e => e.Id == id);
+            return await _druzynaPilkarskasRepository.Exists(id);
         }
     }
 }
