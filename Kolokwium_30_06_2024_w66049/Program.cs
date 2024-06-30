@@ -23,11 +23,14 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod());
 });
 
+// AutoMapper added
 builder.Services.AddAutoMapper(typeof(MapperConfig));
 
+// Repositories added
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 // builder.Services.AddScoped<IEntityRepository, EntityRepository>();
-
+builder.Services.AddScoped<IDruzynaPilkarskasRepository, DruzynaPilkarskasRepository>();
+builder.Services.AddScoped<IMeczsRepository, MeczsRepository>();
 
 var app = builder.Build();
 

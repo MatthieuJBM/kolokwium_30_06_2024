@@ -58,17 +58,23 @@ namespace Kolokwium_30_06_2024_w66049.Controllers
                 return BadRequest();
             }
 
-            var mecz = await _meczsRepository.GetAsync(id);
-            if (mecz == null)
+            var obecnyMecz = await _meczsRepository.GetAsync(id);
+            if (obecnyMecz == null)
             {
                 return NotFound();
             }
 
-            _mapper.Map(meczDto, mecz);
+            // Walidacja czasu
+            if (meczDto.GodzinaMeczuOd > meczDto.GodzinaMeczuDo)
+            {
+                return BadRequest("Godzina rozpoczęcia nie może być później niż godzina zakończenia");
+            }
+
+            _mapper.Map(meczDto, obecnyMecz);
 
             try
             {
-                await _meczsRepository.UpdateAsync(mecz);
+                await _meczsRepository.UpdateAsync(obecnyMecz);
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -90,6 +96,19 @@ namespace Kolokwium_30_06_2024_w66049.Controllers
         [HttpPost]
         public async Task<ActionResult<Mecz>> PostMecz(MeczDto meczDto)
         {
+            // Walidacja czasu
+            if (meczDto.GodzinaMeczuOd > meczDto.GodzinaMeczuDo)
+            {
+                return BadRequest("Godzina rozpoczęcia nie może być później niż godzina zakończenia");
+            }
+
+            // Sprawdzenie czy istnieje konflikt pomiędzy meczami
+            if (await jestKonfliktMeczy(meczDto))
+            {
+                return BadRequest("Jakaś drużyna już ma mecz w tym czasie.");
+            }
+
+
             var mecz = _mapper.Map<Mecz>(meczDto);
             await _meczsRepository.AddAsync(mecz);
 
@@ -106,6 +125,12 @@ namespace Kolokwium_30_06_2024_w66049.Controllers
                 return NotFound();
             }
 
+            // Sprawdzenie czy data meczu jest późniejsza niż dzisiaj.
+            if (mecz.DataMeczu <= DateTime.Today)
+            {
+                return BadRequest("Nie można usunąć meczu, który już się odbył.");
+            }
+
             await _meczsRepository.DeleteAsync(id);
 
             return NoContent();
@@ -114,6 +139,13 @@ namespace Kolokwium_30_06_2024_w66049.Controllers
         private async Task<bool> MeczExists(int id)
         {
             return await _meczsRepository.Exists(id);
+        }
+
+        private async Task<bool> jestKonfliktMeczy(MeczDto meczDto)
+        {
+            var konfliktoweMecze = await _meczsRepository.GetKonfliktoweMecze(meczDto.Druzyna1Id, meczDto.Druzyna2Id,
+                meczDto.DataMeczu, meczDto.GodzinaMeczuOd, meczDto.GodzinaMeczuDo);
+            return konfliktoweMecze.Any();
         }
     }
 }
